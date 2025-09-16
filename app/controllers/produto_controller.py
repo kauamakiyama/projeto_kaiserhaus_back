@@ -33,12 +33,10 @@ async def delete_product_route(prod_id: str):
         raise HTTPException(status_code=404, detail="Produto não encontrado")
     return {"message": "Produto deletado com sucesso"}
 
-# ENDPOINTS SIMPLES DE ESTOQUE
+
 @router.patch("/{produto_id}/adicionar-estoque")
 async def adicionar_estoque_route(produto_id: str, quantidade: int):
-    """
-    Adiciona quantidade ao estoque do produto
-    """
+
     if quantidade <= 0:
         raise HTTPException(status_code=400, detail="Quantidade deve ser maior que zero")
     
@@ -49,9 +47,7 @@ async def adicionar_estoque_route(produto_id: str, quantidade: int):
 
 @router.patch("/{produto_id}/remover-estoque")
 async def remover_estoque_route(produto_id: str, quantidade: int):
-    """
-    Remove quantidade do estoque do produto
-    """
+
     if quantidade <= 0:
         raise HTTPException(status_code=400, detail="Quantidade deve ser maior que zero")
     
@@ -62,9 +58,7 @@ async def remover_estoque_route(produto_id: str, quantidade: int):
 
 @router.get("/{produto_id}/tem-estoque")
 async def verificar_estoque_route(produto_id: str, quantidade_desejada: int):
-    """
-    Verifica se tem estoque suficiente
-    """
+
     tem_estoque = await produto_service.verificar_estoque_disponivel(produto_id, quantidade_desejada)
     return {
         "produto_id": produto_id,
@@ -74,9 +68,7 @@ async def verificar_estoque_route(produto_id: str, quantidade_desejada: int):
 
 @router.post("/migrar")
 async def migrar_produtos_route():
-    """
-    Migra produtos existentes adicionando campo quantidade
-    """
+
     produtos_migrados = await produto_service.migrar_produtos_existentes()
     return {
         "message": f"Migração concluída! {produtos_migrados} produtos foram atualizados.",

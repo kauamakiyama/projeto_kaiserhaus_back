@@ -2,8 +2,6 @@ import app.database as database
 from app.schemas import UsuarioIn, UsuarioOut, UsuarioUpdate
 from bson import ObjectId
 from passlib.hash import bcrypt
-from datetime import datetime, date
-
 
 def user_helper(user) -> UsuarioOut:
     return UsuarioOut(
@@ -13,23 +11,24 @@ def user_helper(user) -> UsuarioOut:
         data_nascimento=user["data_nascimento"],
         telefone=user["telefone"],
         endereco=user["endereco"],
-        complemento=user["complemento"]
+        complemento=user["complemento"],
+        hierarquia=user.get("hierarquia", "usuario")   
     )
+
 
 async def create_user(user: UsuarioIn) -> UsuarioOut:
     user_dict = user.dict()
 
-    # Converte data_nascimento (date) para datetime
-    if isinstance(user_dict["data_nascimento"], date): 
-        user_dict["data_nascimento"] = datetime.combine(
-        user_dict["data_nascimento"], datetime.min.time()
-    )
-
 
     user_dict["senha_hash"] = bcrypt.hash(user_dict.pop("senha"))
+
+
+    user_dict["hierarquia"] = "usuario"
+
     result = await database.db["usuarios"].insert_one(user_dict)
     user_dict["_id"] = result.inserted_id
     return user_helper(user_dict)
+
 
 async def get_users() -> list[UsuarioOut]:
     usuarios = []
