@@ -31,6 +31,21 @@ class UsuarioUpdate(BaseModel):
     complemento: str | None = None
     senha: str | None = None
 
+# SCHEMAS DE AUTENTICAÇÃO
+class LoginIn(BaseModel):
+    email: EmailStr
+    senha: str
+
+class LoginOut(BaseModel):
+    message: str
+    usuario: UsuarioOut
+
+class LogoutOut(BaseModel):
+    message: str
+
+class TokenData(BaseModel):
+    email: str | None = None
+
 
 class CategoriaIn(BaseModel):
     nome: str

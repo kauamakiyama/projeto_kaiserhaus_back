@@ -2,13 +2,19 @@ import app.database as database
 from app.schemas import UsuarioIn, UsuarioOut, UsuarioUpdate
 from bson import ObjectId
 from passlib.hash import bcrypt
+from datetime import datetime
 
 def user_helper(user) -> UsuarioOut:
+    # Converter string de data_nascimento de volta para date
+    data_nascimento = user["data_nascimento"]
+    if isinstance(data_nascimento, str):
+        data_nascimento = datetime.strptime(data_nascimento, "%Y-%m-%d").date()
+    
     return UsuarioOut(
         id=str(user["_id"]),
         nome=user["nome"],
         email=user["email"],
-        data_nascimento=user["data_nascimento"],
+        data_nascimento=data_nascimento,
         telefone=user["telefone"],
         endereco=user["endereco"],
         complemento=user["complemento"],
@@ -19,10 +25,11 @@ def user_helper(user) -> UsuarioOut:
 async def create_user(user: UsuarioIn) -> UsuarioOut:
     user_dict = user.dict()
 
-
-    user_dict["senha_hash"] = bcrypt.hash(user_dict.pop("senha"))
-
-
+    # Converter data_nascimento para string
+    user_dict["data_nascimento"] = str(user_dict["data_nascimento"])
+    
+    user_dict["senha_hash"] = bcrypt.hash(user_dict["senha"])
+    del user_dict["senha"]  # Remove a senha em texto plano
     user_dict["hierarquia"] = "usuario"
 
     result = await database.db["usuarios"].insert_one(user_dict)
@@ -43,8 +50,14 @@ async def get_user_by_id(user_id: str) -> UsuarioOut | None:
 
 async def update_user(user_id: str, user: UsuarioUpdate) -> UsuarioOut | None:
     update_data = {k: v for k, v in user.dict().items() if v is not None}
+    
+    # Converter data_nascimento para string se existir
+    if "data_nascimento" in update_data:
+        update_data["data_nascimento"] = str(update_data["data_nascimento"])
+    
     if "senha" in update_data:
-        update_data["senha_hash"] = bcrypt.hash(update_data.pop("senha"))
+        update_data["senha_hash"] = bcrypt.hash(update_data["senha"])
+        del update_data["senha"]  # Remove a senha em texto plano
 
     result = await database.db["usuarios"].update_one(
         {"_id": ObjectId(user_id)}, {"$set": update_data}
