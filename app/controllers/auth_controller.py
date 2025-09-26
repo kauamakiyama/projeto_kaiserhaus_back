@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Response, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas import LoginIn, LoginOut, LogoutOut, UsuarioOut
+from app.schemas import LoginIn, LoginOut, LogoutOut, UsuarioOut, UsuarioIn
 from app.services import auth_service
 from app.dependencies import get_current_user_from_cookie
+from app.services.user_service import create_user
 
 router = APIRouter()
 security = HTTPBearer()
@@ -41,6 +42,14 @@ async def get_current_user_route(credentials: HTTPAuthorizationCredentials = Dep
     """
     user = await auth_service.get_current_user(credentials.credentials)
     return auth_service.user_helper(user)
+
+@router.post("/register", response_model=UsuarioOut)
+async def register_route(user: UsuarioIn):
+    """
+    Cadastra um novo usuário
+    """
+    return await create_user(user)
+
 
 @router.get("/me-cookie", response_model=UsuarioOut)
 async def get_current_user_cookie_route(current_user: UsuarioOut = Depends(get_current_user_from_cookie)):
