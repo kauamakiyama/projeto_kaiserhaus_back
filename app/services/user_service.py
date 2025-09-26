@@ -28,8 +28,9 @@ async def create_user(user: UsuarioIn) -> UsuarioOut:
     # Converter data_nascimento para string
     user_dict["data_nascimento"] = str(user_dict["data_nascimento"])
     
+    # Criptografar senha
     user_dict["senha_hash"] = bcrypt.hash(user_dict["senha"])
-    del user_dict["senha"]  # Remove a senha em texto plano
+    del user_dict["senha"]
     user_dict["hierarquia"] = "usuario"
 
     result = await database.db["usuarios"].insert_one(user_dict)
