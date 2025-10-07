@@ -8,10 +8,8 @@ from app.controllers import user_controller, produto_controller, categoria_contr
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # antes de iniciar o servidor
     await conectar_db()
     yield
-    # quando o servidor for encerrado
     await fechar_db()
 
 app = FastAPI(
@@ -20,19 +18,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Middleware de compressão para melhorar performance
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Configurar CORS para permitir comunicação com o frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Porta do seu frontend
-    allow_credentials=True,  # Permitir cookies
-    allow_methods=["*"],     # Permitir todos os métodos HTTP
-    allow_headers=["*"],     # Permitir todos os headers
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Servir arquivos estáticos (imagens) - otimizado para performance
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(auth_controller.router, prefix="/auth", tags=["Autenticação"])
