@@ -4,13 +4,14 @@ from app.services.user_service import (
     create_user, get_users, get_user_by_id,
     update_user, delete_user
 )
-from app.dependencies import get_current_user_from_cookie
+# from app.dependencies import get_current_user_from_cookie
 
 router = APIRouter()
 
 @router.post("/", response_model=UsuarioOut)
 async def create_user_route(user: UsuarioIn):
     return await create_user(user)
+
 
 @router.get("/", response_model=list[UsuarioOut])
 async def list_users_route():
@@ -37,9 +38,9 @@ async def delete_user_route(user_id: str):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return {"message": "Usuário deletado com sucesso"}
 
-@router.get("/perfil", response_model=UsuarioOut)
-async def get_perfil_route(current_user: UsuarioOut = Depends(get_current_user_from_cookie)):
-    """
-    Rota protegida - retorna dados do usuário logado
-    """
-    return current_user
+# @router.get("/perfil", response_model=UsuarioOut)
+# async def get_perfil_route(current_user: UsuarioOut = Depends(get_current_user_from_cookie)):
+#     """
+#     Rota protegida - retorna dados do usuário logado
+#     """
+#     return current_user

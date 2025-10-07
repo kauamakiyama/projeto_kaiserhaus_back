@@ -1,59 +1,92 @@
-from fastapi import APIRouter, HTTPException, Depends, Response, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas import LoginIn, LoginOut, LogoutOut, UsuarioOut, UsuarioIn
+from fastapi import APIRouter, HTTPException, Response, status
+from app.schemas import LoginIn, LoginOut, UsuarioIn
 from app.services import auth_service
-from app.dependencies import get_current_user_from_cookie
 from app.services.user_service import create_user
+from datetime import timedelta
 
 router = APIRouter()
-security = HTTPBearer()
 
-@router.post("/login", response_model=LoginOut)
+# Configurações
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+@router.post("/usuarios/login", response_model=LoginOut)
 async def login_route(login_data: LoginIn, response: Response):
     """
-    Realiza login do usuário e define cookie de autenticação
+    Endpoint de login que retorna token e define cookie
     """
-    login_result, access_token = await auth_service.login_user(login_data)
-    
-    # Definir cookie com o token
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        max_age=1800,  # 30 minutos
-        httponly=True,  # Não acessível via JavaScript
-        secure=False,   # Para desenvolvimento (use True em produção com HTTPS)
-        samesite="lax"
-    )
-    
-    return login_result
+    try:
+        # Autenticar usuário
+        user = await auth_service.authenticate_user(login_data.email, login_data.senha)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email ou senha incorretos"
+            )
+        
+        # Criar token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth_service.create_access_token(
+            data={"sub": user["email"]}, 
+            expires_delta=access_token_expires
+        )
+        
+        # Definir cookie
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # em segundos
+            httponly=True,
+            secure=False,  # True em produção com HTTPS
+            samesite="lax"
+        )
+        
+        return LoginOut(
+            message="Login realizado com sucesso",
+            usuario=auth_service.user_helper(user)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno do servidor: {str(e)}"
+        )
 
-@router.post("/logout", response_model=LogoutOut)
+@router.post("/usuarios/register", response_model=dict)
+async def register_route(user_data: UsuarioIn):
+    """
+    Endpoint de registro de usuário
+    """
+    try:
+        # Verificar se email já existe
+        existing_user = await auth_service.get_user_by_email(user_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email já está em uso"
+            )
+        
+        # Criar usuário
+        new_user = await create_user(user_data)
+        
+        return {
+            "message": "Usuário criado com sucesso",
+            "usuario": new_user
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno do servidor: {str(e)}"
+        )
+
+@router.post("/logout")
 async def logout_route(response: Response):
     """
-    Realiza logout do usuário removendo o cookie
+    Endpoint de logout que remove o cookie
     """
     response.delete_cookie(key="access_token")
-    return LogoutOut(message="Logout realizado com sucesso")
-
-@router.get("/me", response_model=UsuarioOut)
-async def get_current_user_route(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """
-    Retorna informações do usuário logado via Authorization header
-    """
-    user = await auth_service.get_current_user(credentials.credentials)
-    return auth_service.user_helper(user)
-
-@router.post("/register", response_model=UsuarioOut)
-async def register_route(user: UsuarioIn):
-    """
-    Cadastra um novo usuário
-    """
-    return await create_user(user)
-
-
-@router.get("/me-cookie", response_model=UsuarioOut)
-async def get_current_user_cookie_route(current_user: UsuarioOut = Depends(get_current_user_from_cookie)):
-    """
-    Retorna informações do usuário logado via cookie
-    """
-    return current_user
+    return {"message": "Logout realizado com sucesso"}

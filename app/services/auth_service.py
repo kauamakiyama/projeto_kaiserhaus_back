@@ -26,6 +26,7 @@ def user_helper(user) -> UsuarioOut:
         id=str(user["_id"]),
         nome=user["nome"],
         email=user["email"],
+        cpf=user.get("cpf", ""),  # Campo opcional para compatibilidade
         data_nascimento=data_nascimento,
         telefone=user["telefone"],
         endereco=user["endereco"],

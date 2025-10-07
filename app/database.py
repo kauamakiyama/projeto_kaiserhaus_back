@@ -15,10 +15,10 @@ async def conectar_db():
     global client, db
     client = AsyncIOMotorClient(MONGO_URL)
     db = client[MONGO_DB]
-    print(f"✅ Conectado ao MongoDB: {MONGO_DB}")
+    print(f"Conectado ao MongoDB: {MONGO_DB}")
 
 async def fechar_db():
     global client
     if client:
         client.close()
-        print("❌ Conexão com MongoDB encerrada")
+        print("Conexao com MongoDB encerrada")
