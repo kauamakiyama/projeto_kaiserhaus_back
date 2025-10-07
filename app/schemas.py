@@ -6,7 +6,8 @@ from typing import List, Optional
 class UsuarioIn(BaseModel):   # Cadastro
     nome: str
     email: EmailStr
-    data_nascimento: date
+    cpf: str  # Obrigatório
+    data_nascimento: str  # Aceita string para conversão posterior
     telefone: str
     endereco: str
     complemento: str
@@ -16,6 +17,7 @@ class UsuarioOut(BaseModel):
     id: str
     nome: str
     email: EmailStr
+    cpf: str
     data_nascimento: date
     telefone: str
     endereco: str
@@ -25,7 +27,8 @@ class UsuarioOut(BaseModel):
 class UsuarioUpdate(BaseModel):  
     nome: str | None = None
     email: EmailStr | None = None
-    data_nascimento: date | None = None
+    cpf: str | None = None
+    data_nascimento: str | None = None  # Aceita string para conversão posterior
     telefone: str | None = None
     endereco: str | None = None
     complemento: str | None = None

@@ -14,6 +14,7 @@ def user_helper(user) -> UsuarioOut:
         id=str(user["_id"]),
         nome=user["nome"],
         email=user["email"],
+        cpf=user["cpf"],
         data_nascimento=data_nascimento,
         telefone=user["telefone"],
         endereco=user["endereco"],
@@ -25,8 +26,14 @@ def user_helper(user) -> UsuarioOut:
 async def create_user(user: UsuarioIn) -> UsuarioOut:
     user_dict = user.dict()
 
-    # Converter data_nascimento para string
-    user_dict["data_nascimento"] = str(user_dict["data_nascimento"])
+    # Converter data_nascimento do formato brasileiro (DD/MM/YYYY) para ISO (YYYY-MM-DD)
+    data_str = user_dict["data_nascimento"]
+    if "/" in data_str:  # Formato brasileiro DD/MM/YYYY
+        dia, mes, ano = data_str.split("/")
+        data_iso = f"{ano}-{mes.zfill(2)}-{dia.zfill(2)}"
+        user_dict["data_nascimento"] = data_iso
+    else:  # Já está no formato ISO
+        user_dict["data_nascimento"] = data_str
     
     # Criptografar senha
     user_dict["senha_hash"] = bcrypt.hash(user_dict["senha"])
@@ -52,9 +59,15 @@ async def get_user_by_id(user_id: str) -> UsuarioOut | None:
 async def update_user(user_id: str, user: UsuarioUpdate) -> UsuarioOut | None:
     update_data = {k: v for k, v in user.dict().items() if v is not None}
     
-    # Converter data_nascimento para string se existir
+    # Converter data_nascimento do formato brasileiro para ISO se existir
     if "data_nascimento" in update_data:
-        update_data["data_nascimento"] = str(update_data["data_nascimento"])
+        data_str = str(update_data["data_nascimento"])
+        if "/" in data_str:  # Formato brasileiro DD/MM/YYYY
+            dia, mes, ano = data_str.split("/")
+            data_iso = f"{ano}-{mes.zfill(2)}-{dia.zfill(2)}"
+            update_data["data_nascimento"] = data_iso
+        else:  # Já está no formato ISO
+            update_data["data_nascimento"] = data_str
     
     if "senha" in update_data:
         update_data["senha_hash"] = bcrypt.hash(update_data["senha"])
