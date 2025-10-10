@@ -4,7 +4,7 @@ from app.schemas import (
     PaginacaoPedidosOut, StatusPedido
 )
 from app.services import pedido_service
-from app.dependencies_jwt import get_current_user_id_from_token, get_current_user_from_token
+from app.dependencies_jwt import get_current_user_id_from_token, get_current_user_from_token, verify_admin_user
 from typing import Optional
 
 router = APIRouter()
@@ -38,6 +38,24 @@ async def criar_pedido(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno do servidor: {str(e)}"
+        )
+
+@router.get("/admin", response_model=list[dict])
+async def listar_todos_pedidos_admin(
+    admin_user = Depends(verify_admin_user),
+    page: int = Query(1, ge=1, description="Número da página"),
+    page_size: int = Query(10, ge=1, le=100, description="Tamanho da página")
+):
+    """
+    Lista todos os pedidos do sistema (apenas para administradores)
+    """
+    try:
+        pedidos = await pedido_service.listar_todos_pedidos_admin(page, page_size)
+        return pedidos
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
