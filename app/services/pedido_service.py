@@ -320,3 +320,29 @@ async def obter_total_pedido(pedido_id: int) -> Optional[float]:
     
     pedido = await pedidos.find_one({"pedidoId": pedido_id})
     return pedido["total"] if pedido else None
+
+async def listar_todos_pedidos_admin(page: int = 1, page_size: int = 10) -> list[dict]:
+    """Lista todos os pedidos do sistema (apenas para admin)"""
+    db = await get_database()
+    pedidos = db.pedidos
+    
+    offset = (page - 1) * page_size
+    
+    pedidos_cursor = pedidos.find().sort("criadoEm", -1).skip(offset).limit(page_size)
+    
+    pedidos_lista = []
+    async for pedido in pedidos_cursor:
+        itens = [ItemPedidoOut(**item) for item in pedido.get("itens", [])]
+
+        pedidos_lista.append({
+            "id": pedido["pedidoId"],
+            "usuarioId": pedido["usuarioId"],
+            "status": StatusPedido(pedido["status"]),
+            "total": pedido["total"],
+            "metodoPagamento": MetodoPagamento(pedido["metodoPagamento"]),
+            "criadoEm": pedido["criadoEm"],
+            "atualizadoEm": pedido.get("atualizadoEm"),
+            "itens": itens
+        })
+    
+    return pedidos_lista

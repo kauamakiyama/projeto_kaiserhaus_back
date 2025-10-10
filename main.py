@@ -34,7 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_controller.router, tags=["Autenticação"])
+app.include_router(auth_controller.router, prefix="/usuarios", tags=["Autenticação"])
 app.include_router(profile_controller.router, prefix="/usuarios", tags=["Perfil"])
 app.include_router(user_controller.router, prefix="/usuarios", tags=["Usuários"])
 app.include_router(produto_controller.router, prefix="/produtos", tags=["Produtos"])
@@ -44,8 +44,6 @@ app.include_router(pedido_controller.router, prefix="/pedidos", tags=["Pedidos"]
 app.include_router(pagamento_controller.router, prefix="/pagamentos", tags=["Pagamentos"])
 app.include_router(cartao_controller.router, prefix="/cartoes", tags=["Cartões"])
 app.include_router(image_controller.router, prefix="/images", tags=["Imagens"])
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(user_router, prefix="/usuarios", tags=["users"])
 
 @app.get("/")
 def root():

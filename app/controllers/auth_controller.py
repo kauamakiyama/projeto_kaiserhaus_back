@@ -9,7 +9,7 @@ router = APIRouter()
 # Configurações
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
-@router.post("/usuarios/login", response_model=LoginOut)
+@router.post("/login", response_model=LoginOut)
 async def login_route(login_data: LoginIn, response: Response):
     """
     Endpoint de login que retorna token e define cookie
@@ -54,7 +54,7 @@ async def login_route(login_data: LoginIn, response: Response):
             detail=f"Erro interno do servidor: {str(e)}"
         )
 
-@router.post("/usuarios/register", response_model=dict)
+@router.post("/register", response_model=dict)
 async def register_route(user_data: UsuarioIn):
     """
     Endpoint de registro de usuário
