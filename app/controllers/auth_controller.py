@@ -7,7 +7,7 @@ from datetime import timedelta
 router = APIRouter()
 
 # Configurações
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
 @router.post("/usuarios/login", response_model=LoginOut)
 async def login_route(login_data: LoginIn, response: Response):
@@ -40,10 +40,11 @@ async def login_route(login_data: LoginIn, response: Response):
             samesite="lax"
         )
         
-        return LoginOut(
-            message="Login realizado com sucesso",
-            usuario=auth_service.user_helper(user)
-        )
+        return {
+            "message": "Login realizado com sucesso",
+            "token": access_token,
+            "usuario": auth_service.user_helper(user)
+        }
         
     except HTTPException:
         raise

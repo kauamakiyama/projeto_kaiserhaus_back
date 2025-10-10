@@ -22,3 +22,10 @@ async def fechar_db():
     if client:
         client.close()
         print("Conexao com MongoDB encerrada")
+
+async def get_database():
+    """Retorna a instância do banco de dados"""
+    global db
+    if db is None:
+        await conectar_db()
+    return db

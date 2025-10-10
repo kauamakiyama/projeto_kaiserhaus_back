@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
-from datetime import date
-from typing import List, Optional
+from datetime import date, datetime
+from typing import List, Optional, Union
+from enum import Enum
 
 
 class UsuarioIn(BaseModel):   # Cadastro
@@ -41,6 +42,7 @@ class LoginIn(BaseModel):
 
 class LoginOut(BaseModel):
     message: str
+    token: str
     usuario: UsuarioOut
 
 class LogoutOut(BaseModel):
@@ -139,3 +141,181 @@ class PedidoUpdate(BaseModel):
     status: str | None = None
     endereco_entrega: str | None = None
     forma_pagamento: str | None = None
+
+
+# ENUMS PARA CHECKOUT
+class TipoEntrega(str, Enum):
+    PADRAO = "padrao"
+    TURBO = "turbo"
+
+class MetodoPagamento(str, Enum):
+    PIX = "pix"
+    CARTAO = "cartao"
+    DINHEIRO = "dinheiro"
+
+class StatusPedido(str, Enum):
+    PENDENTE = "pendente"
+    EM_PREPARACAO = "em_preparacao"
+    SAIU_PARA_ENTREGA = "saiu_para_entrega"
+    CONCLUIDO = "concluido"
+
+class StatusPagamento(str, Enum):
+    PAGO = "pago"
+    EXPIRADO = "expirado"
+    PENDENTE = "pendente"
+
+
+# SCHEMAS DE ENDEREÇO
+class EnderecoEntrega(BaseModel):
+    logradouro: str
+    numero: str
+    bairro: str
+    cidade: str
+    uf: str
+    cep: str
+    complemento: Optional[str] = None
+
+class EntregaInfo(BaseModel):
+    tipo: TipoEntrega
+    endereco: EnderecoEntrega
+
+class PagamentoInfo(BaseModel):
+    metodo: MetodoPagamento
+    cartaoId: Optional[int] = None
+    trocoPara: Optional[float] = None
+
+
+# SCHEMAS DE ITEM DO PEDIDO
+class ItemPedidoIn(BaseModel):
+    produtoId: Union[str, int]  # Aceita ObjectId (str) ou id numérico (int)
+    quantidade: int
+    observacoes: Optional[str] = None
+
+class ProdutoInfo(BaseModel):
+    nome: str
+    preco: float
+    imagem: Optional[str] = None
+    categoria: Optional[str] = None
+
+class ItemPedidoOut(BaseModel):
+    id: str
+    produtoId: Union[str, int]  # Aceita ObjectId (str) ou id numérico (int)
+    quantidade: int
+    observacoes: Optional[str] = None
+    precoUnitario: float
+    precoTotal: float
+    nomeProduto: str
+    imagemProduto: Optional[str] = None
+    produto: Optional[ProdutoInfo] = None
+
+
+# SCHEMAS DE PEDIDO (NOVO FORMATO)
+class PedidoCheckoutIn(BaseModel):
+    itens: List[ItemPedidoIn]
+    entrega: EntregaInfo
+    pagamento: PagamentoInfo
+
+class PedidoCheckoutOut(BaseModel):
+    pedidoId: int
+    status: StatusPedido
+    total: float
+    taxaEntrega: float
+    itens: List[ItemPedidoOut]
+    pagamento: PagamentoInfo
+    criadoEm: datetime
+    atualizadoEm: datetime
+
+class PedidoDetalhadoOut(BaseModel):
+    id: int
+    usuarioId: str  # Mudado de int para str (ObjectId)
+    status: StatusPedido
+    total: float
+    taxaEntrega: float
+    metodoPagamento: MetodoPagamento
+    criadoEm: datetime
+    atualizadoEm: datetime
+    itens: List[ItemPedidoOut]
+    endereco: EnderecoEntrega
+    pagamento: Optional['PagamentoOut'] = None
+
+
+# SCHEMAS DE PAGAMENTO
+class PagamentoPixIn(BaseModel):
+    pedidoId: int
+    valor: float
+
+class PagamentoPixOut(BaseModel):
+    pedidoId: int
+    qrcode: str
+    copiaECola: str
+    expiraEm: int
+
+class PagamentoCartaoIn(BaseModel):
+    pedidoId: int
+    cartaoId: int
+
+class PagamentoCartaoOut(BaseModel):
+    pedidoId: int
+    status: StatusPagamento
+    transacaoId: str
+
+class PagamentoWebhookIn(BaseModel):
+    pedidoId: int
+    status: StatusPagamento
+
+class PagamentoOut(BaseModel):
+    id: str  # Mudado de int para str (ObjectId)
+    pedidoId: int
+    metodo: MetodoPagamento
+    valor: float
+    status: StatusPagamento
+    qrcode: Optional[str] = None
+    copiaECola: Optional[str] = None
+    transacaoId: Optional[str] = None
+    criadoEm: datetime
+
+
+# SCHEMAS DE LISTAGEM
+class PedidoListaOut(BaseModel):
+    id: int
+    status: StatusPedido
+    total: float
+    metodoPagamento: MetodoPagamento
+    criadoEm: datetime
+    itens: List[ItemPedidoOut]
+
+class PaginacaoPedidosOut(BaseModel):
+    pedidos: List[PedidoListaOut]
+    total: int
+    page: int
+    pageSize: int
+    totalPages: int
+
+
+# SCHEMAS DE CARTAO
+class CartaoIn(BaseModel):
+    numero: str
+    mes: int
+    ano: int
+    cvv: str
+    nome: str
+
+class CartaoOut(BaseModel):
+    id: str
+    last4: str
+    type: str
+    nome: str
+    mes: int
+    ano: int
+    usuarioId: str
+    criadoEm: datetime
+
+class CartaoSalvar(BaseModel):
+    numero_criptografado: str
+    cvv_criptografado: str
+    nome: str
+    mes: int
+    ano: int
+    bandeira: str
+    last4: str
+    usuarioId: str
