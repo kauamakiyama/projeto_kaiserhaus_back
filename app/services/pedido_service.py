@@ -346,3 +346,23 @@ async def listar_todos_pedidos_admin(page: int = 1, page_size: int = 10) -> list
         })
     
     return pedidos_lista
+
+async def obter_contadores_pedidos() -> dict:
+    """Retorna contadores de pedidos por status"""
+    db = await get_database()
+    pedidos = db.pedidos
+    
+    # Contar pedidos por status
+    pendentes = await pedidos.count_documents({"status": "pendente"})
+    em_preparacao = await pedidos.count_documents({"status": "em_preparacao"})
+    saiu_para_entrega = await pedidos.count_documents({"status": "saiu_para_entrega"})
+    concluidos = await pedidos.count_documents({"status": "concluido"})
+    total = await pedidos.count_documents({})
+    
+    return {
+        "pendentes": pendentes,
+        "em_preparacao": em_preparacao,
+        "saiu_para_entrega": saiu_para_entrega,
+        "concluidos": concluidos,
+        "total": total
+    }

@@ -4,16 +4,16 @@ from typing import List, Optional, Union
 from enum import Enum
 
 
-class UsuarioIn(BaseModel):   # Cadastro
+class UsuarioIn(BaseModel):
     nome: str
     email: EmailStr
-    cpf: str  # Obrigatório
-    data_nascimento: str  # Aceita string para conversão posterior
+    cpf: str
+    data_nascimento: str
     telefone: str
     endereco: str
     complemento: str
     senha: str
-    hierarquia: str | None = "usuario"  # Padrão é usuário, mas pode ser definido   
+    hierarquia: str | None = "usuario"
 
 class UsuarioOut(BaseModel): 
     id: str
@@ -30,7 +30,7 @@ class UsuarioUpdate(BaseModel):
     nome: str | None = None
     email: EmailStr | None = None
     cpf: str | None = None
-    data_nascimento: str | None = None  # Aceita string para conversão posterior
+    data_nascimento: str | None = None
     telefone: str | None = None
     endereco: str | None = None
     complemento: str | None = None
@@ -163,13 +163,14 @@ class StatusPedido(str, Enum):
     SAIU_PARA_ENTREGA = "saiu_para_entrega"
     CONCLUIDO = "concluido"
 
+class AtualizarStatusIn(BaseModel):
+    status: StatusPedido
+
 class StatusPagamento(str, Enum):
     PAGO = "pago"
     EXPIRADO = "expirado"
     PENDENTE = "pendente"
 
-
-# SCHEMAS DE ENDEREÇO
 class EnderecoEntrega(BaseModel):
     logradouro: str
     numero: str
