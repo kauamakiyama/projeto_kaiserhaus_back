@@ -12,7 +12,8 @@ class UsuarioIn(BaseModel):   # Cadastro
     telefone: str
     endereco: str
     complemento: str
-    senha: str   
+    senha: str
+    hierarquia: str | None = "usuario"  # Padrão é usuário, mas pode ser definido   
 
 class UsuarioOut(BaseModel): 
     id: str
@@ -34,6 +35,7 @@ class UsuarioUpdate(BaseModel):
     endereco: str | None = None
     complemento: str | None = None
     senha: str | None = None
+    hierarquia: str | None = None
 
 # SCHEMAS DE AUTENTICAÇÃO
 class LoginIn(BaseModel):
