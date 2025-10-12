@@ -38,7 +38,10 @@ async def create_user(user: UsuarioIn) -> UsuarioOut:
     # Criptografar senha
     user_dict["senha_hash"] = bcrypt.hash(user_dict["senha"])
     del user_dict["senha"]
-    user_dict["hierarquia"] = "usuario"
+    
+    # Definir hierarquia (padrão é "usuario" se não especificado)
+    if "hierarquia" not in user_dict or user_dict["hierarquia"] is None:
+        user_dict["hierarquia"] = "usuario"
 
     result = await database.db["usuarios"].insert_one(user_dict)
     user_dict["_id"] = result.inserted_id
