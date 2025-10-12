@@ -66,6 +66,16 @@ async def verificar_estoque_route(produto_id: str, quantidade_desejada: int):
         "tem_estoque": tem_estoque
     }
 
+@router.patch("/{produto_id}/status")
+async def alterar_status_produto_route(produto_id: str, ativo: bool):
+    """
+    Altera o status ativo/inativo de um produto
+    """
+    produto = await produto_service.alterar_status_produto(produto_id, ativo)
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    return produto
+
 @router.post("/migrar")
 async def migrar_produtos_route():
 

@@ -82,6 +82,7 @@ class ProdutoOut(BaseModel):
     imagem: str
     categoria_id: str
     quantidade: int
+    ativo: bool
 
 class ProdutoUpdate(BaseModel):
     titulo: str | None = None
@@ -90,6 +91,7 @@ class ProdutoUpdate(BaseModel):
     imagem: str | None = None
     categoria_id: str | None = None
     quantidade: int | None = None
+    ativo: bool | None = None
 
 
 class ItemSacolaIn(BaseModel):
