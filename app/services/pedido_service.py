@@ -217,18 +217,39 @@ async def criar_pedido(pedido_data: PedidoCheckoutIn, usuario_id: str) -> Pedido
     )
 
 async def obter_pedido_por_id(pedido_id: int, usuario_id: str) -> Optional[PedidoDetalhadoOut]:
-    """Obtém um pedido específico (apenas o dono ou admin pode ver)"""
+    """Obtém um pedido específico (dono, funcionário ou admin podem ver)"""
     db = await get_database()
     pedidos = db.pedidos
     enderecos = db.enderecos
     pagamentos = db.pagamentos
     
+    print(f"DEBUG: Buscando pedido {pedido_id} para usuário {usuario_id}")
+    
     pedido = await pedidos.find_one({"pedidoId": pedido_id})
     if not pedido:
+        print(f"DEBUG: Pedido {pedido_id} não encontrado no banco de dados")
+        # Vamos verificar quantos pedidos existem no total
+        total_pedidos = await pedidos.count_documents({})
+        print(f"DEBUG: Total de pedidos no banco: {total_pedidos}")
         return None
     
-    if pedido["usuarioId"] != usuario_id:
+    print(f"DEBUG: Pedido {pedido_id} encontrado, dono: {pedido['usuarioId']}")
+    
+    # Verificar se o usuário é o dono do pedido ou se é funcionário/admin
+    usuario = await db.usuarios.find_one({"_id": ObjectId(usuario_id)})
+    if not usuario:
+        print(f"DEBUG: Usuário {usuario_id} não encontrado")
+        raise PermissionError("Usuário não encontrado")
+    
+    user_hierarchy = usuario.get("hierarquia", "usuario")
+    print(f"DEBUG: Usuário {usuario_id} tem hierarquia: {user_hierarchy}")
+    
+    # Permitir acesso se for o dono do pedido, funcionário ou admin
+    if pedido["usuarioId"] != usuario_id and user_hierarchy not in ["funcionario", "admin", "colaborador"]:
+        print(f"DEBUG: Acesso negado - usuário {usuario_id} não é dono nem funcionário/admin")
         raise PermissionError("Você não tem permissão para ver este pedido")
+    
+    print(f"DEBUG: Acesso permitido para usuário {usuario_id}")
     
     itens = [ItemPedidoOut(**item) for item in pedido.get("itens", [])]
     
