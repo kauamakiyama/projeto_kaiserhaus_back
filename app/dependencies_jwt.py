@@ -119,7 +119,7 @@ async def verify_admin_user(credentials: HTTPAuthorizationCredentials = Depends(
 async def verify_funcionario_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> UsuarioOut:
     user = await get_current_user_from_token(credentials)
     
-    if user.hierarquia not in ["funcionario", "admin", "colaborador"]:
+    if user.hierarquia not in ["funcionario", "admin", "colaborador", "usuario"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso negado. Apenas funcionários, administradores e colaboradores podem acessar este recurso."
