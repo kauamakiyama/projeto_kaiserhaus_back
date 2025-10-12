@@ -10,7 +10,8 @@ def product_helper(prod) -> ProdutoOut:
         preco=prod["preco"],
         imagem=prod["imagem"],
         categoria_id=prod["categoria_id"],
-        quantidade=prod.get("quantidade", 0)  
+        quantidade=prod.get("quantidade", 0),
+        ativo=prod.get("ativo", True)
     )
 
 
@@ -76,6 +77,19 @@ async def verificar_estoque_disponivel(produto_id: str, quantidade_desejada: int
         return False
     return produto["quantidade"] >= quantidade_desejada
 
+
+async def alterar_status_produto(produto_id: str, ativo: bool) -> ProdutoOut | None:
+    """
+    Altera o status ativo/inativo de um produto
+    """
+    result = await database.db["produtos"].update_one(
+        {"_id": ObjectId(produto_id)},
+        {"$set": {"ativo": ativo}}
+    )
+    
+    if result.modified_count == 1:
+        return await get_product_by_id(produto_id)
+    return None
 
 async def migrar_produtos_existentes():
 
