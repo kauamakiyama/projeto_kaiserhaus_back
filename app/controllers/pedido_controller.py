@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.schemas import (
-    PedidoCheckoutIn, PedidoCheckoutOut, PedidoDetalhadoOut, 
-    PaginacaoPedidosOut, StatusPedido
+    PedidoCheckoutIn, PedidoCheckoutOut, PedidoDetalhadoOut,
+    PaginacaoPedidosOut, StatusPedido, AtualizarStatusIn
 )
 from app.services import pedido_service
-from app.dependencies_jwt import get_current_user_id_from_token, get_current_user_from_token, verify_admin_user
+from app.dependencies_jwt import (
+    get_current_user_id_from_token,
+    verify_admin_user,
+    verify_funcionario_user,
+)
 from typing import Optional
 
 router = APIRouter()
+
 
 @router.post("/", response_model=PedidoCheckoutOut)
 @router.post("", response_model=PedidoCheckoutOut)
@@ -17,7 +22,7 @@ async def criar_pedido(
 ):
     """
     Cria um novo pedido
-    
+
     Validações:
     - Usuário deve estar autenticado
     - Itens não podem estar vazios
@@ -25,7 +30,7 @@ async def criar_pedido(
     - Produtos devem existir e estar ativos
     - Endereço é obrigatório
     - Método de pagamento válido
-    
+
     Cálculos automáticos:
     - totalProdutos = soma(precoBanco * quantidade)
     - taxaEntrega = tipo==="turbo" ? 17.99 : 0
@@ -43,6 +48,7 @@ async def criar_pedido(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno do servidor: {str(e)}"
         )
+
 
 @router.get("/admin", response_model=list[dict])
 async def listar_todos_pedidos_admin(
@@ -62,6 +68,43 @@ async def listar_todos_pedidos_admin(
             detail=f"Erro interno do servidor: {str(e)}"
         )
 
+
+@router.get("/funcionario", response_model=list[dict])
+async def listar_todos_pedidos_funcionario(
+    funcionario_user = Depends(verify_funcionario_user),
+    page: int = Query(1, ge=1, description="Número da página"),
+    page_size: int = Query(10, ge=1, le=100, description="Tamanho da página")
+):
+    """
+    Lista todos os pedidos do sistema (para funcionários e administradores)
+    """
+    try:
+        pedidos = await pedido_service.listar_todos_pedidos_admin(page, page_size)
+        return pedidos
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno do servidor: {str(e)}"
+        )
+
+
+@router.get("/funcionario/contadores", response_model=dict)
+async def obter_contadores_pedidos_funcionario(
+    funcionario_user = Depends(verify_funcionario_user)
+):
+    """
+    Retorna contadores de pedidos por status (para funcionários e administradores)
+    """
+    try:
+        contadores = await pedido_service.obter_contadores_pedidos()
+        return contadores
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno do servidor: {str(e)}"
+        )
+
+
 @router.get("/{pedido_id}", response_model=PedidoDetalhadoOut)
 async def obter_pedido(
     pedido_id: int,
@@ -69,7 +112,7 @@ async def obter_pedido(
 ):
     """
     Obtém um pedido específico
-    
+
     - Apenas o dono do pedido ou admin pode visualizar
     - Retorna todos os detalhes: itens, endereço, pagamento, totais
     """
@@ -92,6 +135,7 @@ async def obter_pedido(
             detail=f"Erro interno do servidor: {str(e)}"
         )
 
+
 @router.get("/", response_model=PaginacaoPedidosOut)
 @router.get("", response_model=PaginacaoPedidosOut)
 async def listar_pedidos_usuario(
@@ -101,7 +145,7 @@ async def listar_pedidos_usuario(
 ):
     """
     Lista pedidos do usuário autenticado
-    
+
     - Retorna pedidos ordenados por data de criação (mais recentes primeiro)
     - Suporte a paginação
     - Cada pedido inclui itens e informações básicas
@@ -115,29 +159,27 @@ async def listar_pedidos_usuario(
             detail=f"Erro interno do servidor: {str(e)}"
         )
 
-@router.patch("/{pedido_id}/status")
+
+@router.patch("/{pedido_id}/status", response_model=dict)
 async def atualizar_status_pedido(
     pedido_id: int,
-    novo_status: StatusPedido,
+    payload: AtualizarStatusIn,  # espera body: {"status": "<valor-do-enum>"}
     usuario_id: str = Depends(get_current_user_id_from_token)
 ):
     """
     Atualiza o status de um pedido
-    
-    - Apenas admin pode alterar status
+
     - Status válidos: "pendente", "em_preparacao", "saiu_para_entrega", "concluido"
     """
     try:
-        # Por enquanto, qualquer usuário pode alterar status
-        
-        sucesso = await pedido_service.atualizar_status_pedido(pedido_id, novo_status)
+        # Se quiser restringir por papel, troque a dependência acima para verify_funcionario_user ou verify_admin_user
+        sucesso = await pedido_service.atualizar_status_pedido(pedido_id, payload.status)
         if not sucesso:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Pedido não encontrado"
             )
-        
-        return {"message": f"Status do pedido {pedido_id} atualizado para {novo_status}"}
+        return {"message": f"Status do pedido {pedido_id} atualizado para {payload.status}"}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
