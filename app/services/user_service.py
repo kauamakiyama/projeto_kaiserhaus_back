@@ -4,11 +4,23 @@ from bson import ObjectId
 from passlib.hash import bcrypt
 from datetime import datetime
 
+
+def _normalize_iso_date_string(date_str: str) -> str:
+    """Corrige datas inválidas conhecidas, como anos com 5 dígitos."""
+    cleaned = date_str.strip()
+    if cleaned.count("-") == 2:
+        year, month, day = cleaned.split("-")
+        if len(year) > 4 and year.isdigit():
+            cleaned = f"{year[:4]}-{month}-{day}"
+    return cleaned
+
 def user_helper(user) -> UsuarioOut:
     # Converter string de data_nascimento de volta para date
     data_nascimento = user["data_nascimento"]
     if isinstance(data_nascimento, str):
-        data_nascimento = datetime.strptime(data_nascimento, "%Y-%m-%d").date()
+        data_nascimento = datetime.strptime(
+            _normalize_iso_date_string(data_nascimento), "%Y-%m-%d"
+        ).date()
     
     return UsuarioOut(
         id=str(user["_id"]),
@@ -51,6 +63,15 @@ async def create_user(user: UsuarioIn) -> UsuarioOut:
 async def get_users() -> list[UsuarioOut]:
     usuarios = []
     async for user in database.db["usuarios"].find():
+        if isinstance(user.get("data_nascimento"), str):
+            normalized = _normalize_iso_date_string(user["data_nascimento"])
+            if normalized != user["data_nascimento"]:
+                await database.db["usuarios"].update_one(
+                    {"_id": user["_id"]},
+                    {"$set": {"data_nascimento": normalized}},
+                )
+                user["data_nascimento"] = normalized
+
         usuarios.append(user_helper(user))
     return usuarios
 
